@@ -24,60 +24,58 @@ namespace Devday
         {
             try
             {
-                if( input.Request is LaunchRequest )
+                var responseBuilder = new StringBuilder();
+
+                var intentRequest = input.Request as IntentRequest;
+
+                if( !(intentRequest is null) )
                 {
-                    context.Logger.LogLine( "LaunchRequest detected." );
+                    context.Logger.LogLine( $"{intentRequest.Intent.Name} recognized." );
 
-                    var speech = new SsmlOutputSpeech();
-                    speech.Ssml = $"<speak>Benvenuto al Dev Day.</speak>";
-
-                    var repromptMessage = new PlainTextOutputSpeech();
-                    repromptMessage.Text = "Cosa vuoi sapere?";
-
-                    var repromptBody = new Reprompt();
-                    repromptBody.OutputSpeech = repromptMessage;
-
-                    var finalResponse = ResponseBuilder.Ask( speech, repromptBody );
-
-                    return finalResponse;              
-                } else {
-                    var intentRequest = input.Request as IntentRequest;
-
-                    context.Logger.LogLine( $"{intentRequest.Intent.Name} detected." );
-
-                    var sb = new StringBuilder();
+                    var conditions = new List<ScanCondition>{
+                        new ScanCondition( "Date", ScanOperator.GreaterThanOrEqual, DateTime.Now )
+                    };
 
                     switch ( intentRequest.Intent.Name )
                     {   
                         case "nexteventsIntent":
-                            var devdayEvents = await new DataManager().GetAllAsync<DevdayEvent>( new List<ScanCondition> {
-                                new ScanCondition( "Date", ScanOperator.GreaterThanOrEqual, DateTime.Now )
-                            } );
+                        break;
+                        case "nexteventByCityIntent":
+                            var citySlot = intentRequest.Intent.Slots["city"];
 
-                            if( devdayEvents.Count == 0 ) sb.Append( "Al momento non sono previsti nuovi eventi." );
-                            else {
-                                sb.Append( "I prossimi eventi sono: " );
+                            context.Logger.LogLine( $"city = {citySlot.Value}" );
 
-                                foreach (var item in devdayEvents )
-                                {
-                                    var itaDate = item.Date.ToString( "dddd, d MMMM yyyy", new CultureInfo("it-IT") );
-                                    var itaHour = item.Date.ToString( "H:mm", new CultureInfo("it-IT") );
-                                    
-                                    sb.Append( $"{item.Title} per {itaDate} alle {itaHour}, " );
-                                }
-                            }
-                            break;
+                            conditions.Add( new ScanCondition( "City", ScanOperator.Equal, citySlot.Value ) );
+                        break;
                         default:
-                            sb.Append( "Mi dispiace, non ho capito." );
                             break;
                     }
 
-                    var speech = new SsmlOutputSpeech { 
-                        Ssml = $"<speak>{sb.ToString()}</speak>"
-                    };
-                
-                    return ResponseBuilder.Tell( speech );
+                    var devdayEvents = await new DataManager()
+                                        .GetAllAsync<DevdayEvent>( conditions );
+
+                    if( devdayEvents.Count == 0 ) responseBuilder.Append( "Al momento non sono previsti nuovi eventi." );
+                    else {
+                        responseBuilder.Append( "I prossimi eventi sono: " );
+
+                        foreach (var item in devdayEvents )
+                        {
+                            var itaDate = item.Date.ToString( "dddd, d MMMM yyyy", new CultureInfo("it-IT") );
+                            var itaHour = item.Date.ToString( "H:mm", new CultureInfo("it-IT") );
+                            
+                            responseBuilder.Append( $"{item.Title} per {itaDate} alle {itaHour}, " );
+                        }
+                    }
                 }
+                else {
+                    responseBuilder.Append( "Mi dispiace, non ho capito." );
+                }
+
+                var speech = new SsmlOutputSpeech { 
+                    Ssml = $"<speak>{responseBuilder.ToString()}</speak>"
+                };
+                
+                return ResponseBuilder.Tell( speech );
             }
             catch( System.Exception ex )
             {
