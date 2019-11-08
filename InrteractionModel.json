@@ -1,0 +1,70 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "dev day",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "nexteventByCityIntent",
+                    "slots": [
+                        {
+                            "name": "city",
+                            "type": "LIST_OF_CITIES"
+                        }
+                    ],
+                    "samples": [
+                        "quando ci saranno i prossimi eventi {city}",
+                        "quali sono i prossimi eventi a {city}"
+                    ]
+                }
+            ],
+            "types": [
+                {
+                    "name": "LIST_OF_CITIES",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "Caserta"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Benevento"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Avellino"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Salerno"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Napoli"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
