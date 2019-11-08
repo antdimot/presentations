@@ -18,13 +18,12 @@ using Amazon.Lambda.Core;
 namespace Devday
 {
     public class Function
-    {
-        
+    {     
         public async Task<SkillResponse> FunctionHandler( SkillRequest input, ILambdaContext context )
         {
             try
             {
-                var responseBuilder = new StringBuilder();
+                var response = new StringBuilder();
 
                 var intentRequest = input.Request as IntentRequest;
 
@@ -32,47 +31,43 @@ namespace Devday
                 {
                     context.Logger.LogLine( $"{intentRequest.Intent.Name} recognized." );
 
-                    var conditions = new List<ScanCondition>{
-                        new ScanCondition( "Date", ScanOperator.GreaterThanOrEqual, DateTime.Now )
-                    };
+                    var conditions = new List<ScanCondition>();
 
                     switch ( intentRequest.Intent.Name )
                     {   
-                        case "nexteventsIntent":
-                        break;
                         case "nexteventByCityIntent":
                             var citySlot = intentRequest.Intent.Slots["city"];
 
                             context.Logger.LogLine( $"city = {citySlot.Value}" );
-
+                            
+                            conditions.Add( new ScanCondition( "Date", ScanOperator.GreaterThanOrEqual, DateTime.Now ) );
                             conditions.Add( new ScanCondition( "City", ScanOperator.Equal, citySlot.Value ) );
                         break;
                         default:
                             break;
                     }
 
-                    var devdayEvents = await new DataManager()
-                                        .GetAllAsync<DevdayEvent>( conditions );
+                    var devdayEvents = await new DataManager().GetAllAsync<DevdayEvent>( conditions );
 
-                    if( devdayEvents.Count == 0 ) responseBuilder.Append( "Al momento non sono previsti nuovi eventi." );
+                    if( devdayEvents.Count == 0 ) response.Append( "Al momento non sono previsti nuovi eventi." );
                     else {
-                        responseBuilder.Append( "I prossimi eventi sono: " );
+                        response.Append( "I prossimi eventi sono: " );
 
-                        foreach (var item in devdayEvents )
+                        foreach( var item in devdayEvents.OrderBy( e => e.Date ) )
                         {
                             var itaDate = item.Date.ToString( "dddd, d MMMM yyyy", new CultureInfo("it-IT") );
                             var itaHour = item.Date.ToString( "H:mm", new CultureInfo("it-IT") );
                             
-                            responseBuilder.Append( $"{item.Title} per {itaDate} alle {itaHour}, " );
+                            response.Append( $"{item.Title} per {itaDate} alle {itaHour}, " );
                         }
                     }
                 }
                 else {
-                    responseBuilder.Append( "Mi dispiace, non ho capito." );
+                    response.Append( "Mi dispiace, non ho capito." );
                 }
 
                 var speech = new SsmlOutputSpeech { 
-                    Ssml = $"<speak>{responseBuilder.ToString()}</speak>"
+                    Ssml = $"<speak>{response.ToString()}</speak>"
                 };
                 
                 return ResponseBuilder.Tell( speech );
