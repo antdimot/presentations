@@ -1,4 +1,4 @@
-# my presentations collection
+# My presentations
 
 [devday](https://www.devday.it)
 
